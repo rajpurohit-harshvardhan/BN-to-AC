@@ -41,7 +41,7 @@ def create_sum_product_network(elimination_order, universal_dict, parents_dict, 
             buckets = bnf.eliminate_node(node, node_value_obj, buckets, nodes["node_name"])
             # print("Buckets:", buckets)
 
-    print("BUCKETS ::", buckets)
+    # print("BUCKETS ::", buckets)
     return buckets
 
 
@@ -63,10 +63,10 @@ def main(absolute_file_path, evidence=None):
             print("Evaluation of Arithmetic Circuit based on evidence "+evidence+" yields :: ", str(bnf.evaluate_arithmetic_circuit(value, evidence)))
 
     file_name = absolute_file_path.split("/")[-1].split(".")[0]
-    plot.plot_graphviz(buckets, file_name)
+    plot.plot_graphviz(buckets, file_name, sf.nodes_stats)
 
     print("Nodes statistics ::", sf.nodes_stats)
 
 
-bif_file = 'C:/Users/harsh/OneDrive/Desktop/University/Semester 3/Uncertain Reasoning in AI/BNs Practical/asia_bif/asia.bif'
-main(bif_file, None)
+bif_file = ''  # Path of the Bif file.
+main(bif_file, None)  # Provide Evidence values here.

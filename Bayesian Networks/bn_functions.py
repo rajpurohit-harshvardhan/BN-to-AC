@@ -160,7 +160,7 @@ def evaluate_arithmetic_circuit(node, evidence=None):
         return 1
 
     indicator_value = None
-    for item in evidence.split("|"):
+    for item in evidence.split(","):
         item = item.split("=")   # Example: evidence = "B=0|A=1" then item = B=0
         item_variable = item[0].strip()  # item[0] = B
         item_value = item[1].strip()  # item[1] = 0
@@ -350,7 +350,7 @@ def calculate_potential(selected_node_obj, current_node_obj, bucket_name, new_bu
 # Input : {node: "B", node_value_obj: {"0,0":{..}, "0,1":{..}}, buckets: {"B,C,A": {..}}, current_node_name: "B,A"}
 # Output: {"C,A": {..}}
 def eliminate_node(node, node_value_obj, buckets, current_node_name):
-    # print("Eliminating node ::", node)
+    print("Eliminating node ::", node)
 
     # removing the node to be eliminated from the node_name to achieve nodes for which potential bucket would be created
     current_node_index = current_node_name.split(",").index(node)

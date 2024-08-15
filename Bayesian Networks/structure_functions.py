@@ -1,3 +1,4 @@
+# Description:
 # This file contains functions that defines the basic structure for representation of a node in the network
 
 import itertools
@@ -13,6 +14,8 @@ nodes_stats = {
     "total": 0,
     "product": 0,
     "sum": 0,
+    "parameter": 0,
+    "indicator": 0,
 }
 indicator_nodes = []
 
@@ -48,17 +51,23 @@ def create_universal_dict(bn_graph_nodes):
 #     "variable_value": "", ## possible value of variable, ex: 0
 # }
 # references to denote that this node is a parent to these child node in the network
+# Input: {node_type: "value", value: 0.2, references: [], node: "A", variable_value: "0"}
+# Output: {type: "value", value: 0.2, references: [], node: A,  variable_value: "0"}
 def create_node(node_type, value, references, node, variable_value):
     nodes_stats["total"] += 1
     if node_type == "sum":
         nodes_stats["sum"] += 1
     elif node_type == "product":
         nodes_stats["product"] += 1
+    elif node_type == "value":
+        nodes_stats["parameter"] += 1
     if node_type == "indicator":
+        nodes_stats["indicator"] += 1
         # condition checks if an indicator nodes already exists, if yes, we subtract its count from total
         if node_type+"-"+node+"-"+variable_value in indicator_nodes:
             # print("found-duplicate", node_type+"-"+node+"-"+variable_value)
             nodes_stats["total"] -= 1
+            nodes_stats["indicator"] -= 1
         indicator_nodes.append(node_type+"-"+node+"-"+variable_value)
 
     return {

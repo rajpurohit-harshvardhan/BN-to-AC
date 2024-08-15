@@ -3,7 +3,11 @@
 # After this file is executed with appropriate inputs, the output would be an SVG file of the Arithmetic circuit.
 # Format of a single node ::
 # {
-#     ""
+#     "type": "", ## possible values: sum/product/value/indicator
+#     "value": , ## probability value
+#     "references": [], ## contains dict representing other nodes
+#     "node": "", ## name of variable, ex: A
+#     "variable_value": "", ## possible value of variable, ex: 0
 # }
 
 
@@ -22,6 +26,8 @@ edges = []
 # value of node (probability value),
 # variable_value(indicator of the possible values for node),
 # counter(Used to allow multiple sum/product nodes with same name/label and not let graphviz detect them as duplicates).
+# Input: {node_name: "A_value", type: "value", node_value: 0.5, variable_value: "0", counter: [4]}
+# Output:{node_name: A_value_0.5_5, label: "A_value_0.5", fillcolor: "Lavender"}
 def get_node_attributes(node_name, type, node_value, variable_value, counter):
     label = node_name
     fillcolor = "white"
@@ -55,6 +61,8 @@ def get_node_attributes(node_name, type, node_value, variable_value, counter):
 # The idea behind this function is that the nodes dict contains every node created until the moment this func is called.
 # We search for these nodes to check whether a node with the given node_name exists,
 # if yes, we return the existing node OR we return None
+# Input: {node_name: "A_sum4", node_references: [{ ..node_format.. }], nodes: {"A_sum2":[{ ..node_format.. }]}}
+# Output: None OR "A_sum2"
 def find_duplicate(node_name, node_references, nodes):
     keys = list(nodes.keys())
     for i in range(len(keys)):
@@ -68,6 +76,8 @@ def find_duplicate(node_name, node_references, nodes):
 
 
 # The brain of the file, is responsible for converting the dict of dict representing the AC into a visual network
+# Input: {data: {"A":{"0": { ..node_format.. }, "1": { ..node_format.. }}}, dot: ..Graphviz_digraph..}
+# Output: ..Graphviz_digraph..
 def create_graphviz(data, dot):
     nodes = {}  # used for detecting duplicates
     counter = [0]  # used to allow duplicate sum/product/variable nodes which have same name.
@@ -110,10 +120,13 @@ def create_graphviz(data, dot):
 
 
 # Main function of the file, is responsible for plotting the network with the provided input values.
-def plot_graphviz(data, file_name):
+# Input: {data: {"A":{"0": { ..node_format.. }, "1": { ..node_format.. }}}, file_name: "asia"}
+# Output: None
+def plot_graphviz(data, file_name, nodes_stats):
     # For loop because we receive a dict where keys = possible values of root variable & values = dict of a node format
     for node in data:
         dot = graphviz.Digraph("AC_" + file_name + "_" + node, comment='Arithmetic Circuit', format='svg')  # creates a file with the file_name and format
         dot = create_graphviz(data[node], dot)  # uses the file to plot the network
+        dot.attr(label="Node Stats :: " + str(nodes_stats), labelloc="nodes_stats")
         dot.render(directory='arithmetic-circuits/'+file_name).replace('\\', '/')
         print("Created arithmetic circuit at folder: arithmetic-circuits/"+file_name)
