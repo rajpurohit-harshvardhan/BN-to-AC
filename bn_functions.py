@@ -226,7 +226,7 @@ def find_elimination_order(bn_network, bn_graph_nodes):
 # function used to remove the node from a distribution, basically create a marginal over the rest of the variables
 # Input: {new_buckets: {"B,C,A": {..node_format..}}, bucket_name: "B,C,A", selected_node_index: 1}
 # Output: {"B,A": {..node_format..}}
-def remove_node_from_potential(new_buckets, bucket_name, selected_node_index):
+def remove_node_from_potential(new_buckets, bucket_name, selected_node_index, common_values):
     delete_bucket_item = True  # used to delete the existing bucket from new_buckets dict
 
     # deduce the bucket name when node C is removed from B,C,A
@@ -253,7 +253,7 @@ def remove_node_from_potential(new_buckets, bucket_name, selected_node_index):
     if variables_other_than_node in new_buckets and delete_bucket_item:
         return calculate_potential(new_buckets[variables_other_than_node], marginalized_distribution,
                                    variables_other_than_node, {}, selected_node_index, 0, False,
-                                   variables_other_than_node, True)
+                                   variables_other_than_node, True, common_values)
 
     # When we only have 1 bucket in new_bucket, and we create the marginal over itself, we get key:"" as response.
     # To handle that we just check for the length of the key to assign the proper values
@@ -273,16 +273,38 @@ def remove_node_from_potential(new_buckets, bucket_name, selected_node_index):
 def deduce_bucket_name(new_buckets, bucket_item, current_node_name):
     is_name_changed = False
     bucket_name = bucket_item
+    common_values = {}
+
+    for node in current_node_name:
+        if node not in bucket_name:
+            result = bucket_name.split(",")
+            result.append(node)
+            bucket_name = ",".join(result)
+        else:
+            common_values[node] = current_node_name.index(node)
+
+        # bucket_name = ",".join(list(set(result + [node])))
+
+    if len(bucket_name) > len(bucket_item):
+        is_name_changed = True
 
     # this condition checks that if there are variables that are not in the potential to be calculated, then we add them
-    if len(",".join(current_node_name)) > 0 and ",".join(current_node_name) not in bucket_name:
-        is_name_changed = True
-        bucket_name = ",".join(bucket_item.split(",") + current_node_name)
+    # if len(",".join(current_node_name)) > 0 and ",".join(current_node_name) not in bucket_name:
+    #     is_name_changed = True
+    #     bucket_name = ",".join(bucket_item.split(",") + current_node_name)
 
     # we remove the existing network since we will be calculating a new potential over the new variables
     if bucket_item in new_buckets:
         del new_buckets[bucket_item]
-    return bucket_name, is_name_changed, new_buckets
+    return bucket_name, is_name_changed, new_buckets, common_values
+
+
+def remove_common_values(current_node_key, current_node_index, common_values):
+  current_key = current_node_key
+  del current_key[current_node_index]
+  for key,value in common_values.items():
+    del current_key[value]
+  return current_key
 
 
 # This function uses the functions defined above and calculates a potential over variables
@@ -291,7 +313,7 @@ def deduce_bucket_name(new_buckets, bucket_item, current_node_name):
 #         is_name_changed: True, current_node: "B", is_bucket_item_equal_to_bucket_name: False}
 # Output: {"B,C,A":{..}}
 def calculate_potential(selected_node_obj, current_node_obj, bucket_name, new_buckets, selected_node_index,
-                        current_node_index, is_name_changed, current_node, is_bucket_item_equal_to_bucket_name):
+                        current_node_index, is_name_changed, current_node, is_bucket_item_equal_to_bucket_name, common_values):
     for selected_node_key, selected_node_value in selected_node_obj.items():  # loop over all the possible values
         selected_node_key = selected_node_key.split(",")  # splitting for ease in calculation
 
@@ -322,8 +344,9 @@ def calculate_potential(selected_node_obj, current_node_obj, bucket_name, new_bu
                 if bucket_name not in new_buckets:
                     new_buckets[bucket_name] = {}
 
-                current_key = current_node_key
-                del current_key[current_node_index]
+                # current_key = current_node_key
+                # del current_key[current_node_index]
+                current_key = remove_common_values(current_node_key, current_node_index, common_values)
 
                 new_bucket_node_key = ",".join(selected_node_key)
                 if is_name_changed:
@@ -369,7 +392,7 @@ def eliminate_node(node, node_value_obj, buckets, current_node_name):
         # finding the index of the node variable to be removed for calculation of potentials
         index = item.split(",").index(node)
         if index > -1:
-            bucket_name, is_name_changed, new_buckets = deduce_bucket_name(new_buckets, item, current_node_name)
+            bucket_name, is_name_changed, new_buckets, common_values = deduce_bucket_name(new_buckets, item, current_node_name)
 
             # True, means potential bucket we will be calculating already exists in the buckets' dict,
             # False, means they are different buckets and thus requires normal calculation
@@ -377,8 +400,8 @@ def eliminate_node(node, node_value_obj, buckets, current_node_name):
                 node_value_obj.keys())
             new_buckets = calculate_potential(buckets[item], node_value_obj, bucket_name, new_buckets, index,
                                               current_node_index, is_name_changed, node,
-                                              is_bucket_item_equal_to_bucket_name)
-            new_buckets = remove_node_from_potential(new_buckets, bucket_name, index)
+                                              is_bucket_item_equal_to_bucket_name, common_values)
+            new_buckets = remove_node_from_potential(new_buckets, bucket_name, index, common_values)
         else:
             # if the current bucket does not contain the node variable, then we leave that bucket as it is
             new_buckets[item] = buckets[item]
